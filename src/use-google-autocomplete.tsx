@@ -1,34 +1,7 @@
-import * as React from 'react';
+import * as React from 'react'
+import { AutocompleteProps } from '../index.d'
 // @ts-ignore
-import * as uuid4 from 'uuid/v4';
-interface GoogleProps {
-  types?: '(cities)' | 'geocode' | 'establishments' | 'address';
-  language?: string;
-  location?: '';
-  radius?: number;
-  strictbounds?: boolean;
-  offset?: number;
-  components?: string;
-}
-
-export interface AutocompleteProps {
-  apiKey: string;
-  query: string;
-  type?: 'places' | 'query';
-  debounceMs?: number;
-  options?: GoogleProps;
-}
-
-interface ReturnProps {
-  results: {
-    predictions: any[];
-    status: string;
-  };
-  isLoading: boolean;
-  error: null | string;
-  getPlaceDetails: any;
-  cancelQuery: (id: string) => void;
-}
+import * as uuid4 from 'uuid/v4'
 
 const initialState = {
   results: {
@@ -37,12 +10,12 @@ const initialState = {
   },
   isLoading: false,
   error: null,
-};
+}
 
 const cors =
   process.env.NODE_ENV !== 'production'
     ? 'https://cors-anywhere.herokuapp.com/'
-    : '';
+    : ''
 
 export default function useGoogleAutocomplete({
   apiKey,
@@ -51,80 +24,85 @@ export default function useGoogleAutocomplete({
   debounceMs = 400,
   options = {},
 }: AutocompleteProps) {
-  const [state, dispatch] = React.useReducer(reducer, initialState);
+  const [state, dispatch] = React.useReducer(reducer, initialState)
 
   // Refs for unique session_tokens, for billing purposes.
   // Reference: https://developers.google.com/places/web-service/autocomplete
-  const sessionToken = React.useRef<string>(uuid4());
-  const sessionTokenTimeout = React.useRef<number>();
+  const sessionToken = React.useRef<string>(uuid4())
+  const sessionTokenTimeout = React.useRef<number>()
 
   // AbortController to cancel window.fetch requests if component unmounts.
-  const abortController = React.useRef<any>();
-  const abortSignal = React.useRef<any>();
+  const abortController = React.useRef<any>()
+  const abortSignal = React.useRef<any>()
 
-  const placesAbortController = React.useRef<any>();
-  const placesAbortSignal = React.useRef<any>();
+  const placesAbortController = React.useRef<any>()
+  const placesAbortSignal = React.useRef<any>()
 
   React.useEffect(() => {
     // Setup a timer to reset our session_token every 3 minutes.
     // Reference: (https://stackoverflow.com/questions/50398801/how-long-do-the-new-places-api-session-tokens-last/50452233#50452233)
-    sessionTokenTimeout.current = window.setInterval(resetSessionToken, 180000);
+    sessionTokenTimeout.current = window.setInterval(resetSessionToken, 180000)
     // Setup AbortControllers to cancel all http requests on unmount.
-    abortController.current = new AbortController();
-    abortSignal.current = abortController.current.signal;
-    placesAbortController.current = new AbortController();
-    placesAbortSignal.current = placesAbortController.current.signal;
+    abortController.current = new AbortController()
+    abortSignal.current = abortController.current.signal
+    placesAbortController.current = new AbortController()
+    placesAbortSignal.current = placesAbortController.current.signal
+    // Setup an AbortController for our getPlacesDetails function
+    placesAbortController.current
+
     // Cleanup clearInterval and abort any http calls on unmount.
     return () => {
-      clearInterval(sessionTokenTimeout.current);
-      abortController.current.abort();
-      placesAbortController.current.abort();
-    };
-  }, []);
+      clearInterval(sessionTokenTimeout.current)
+      abortController.current.abort()
+      placesAbortController.current.abort()
+    }
+  }, [])
 
   // Flag to make sure our useEffect does not run on initial render.
-  const initialRender = React.useRef<boolean>(false);
+  const initialRender = React.useRef<boolean>(false)
   // Debounce our search to only trigger an API call when user stops typing after (n)ms.
-  const debouncedFn = React.useRef<any>();
+  const debouncedFn = React.useRef<any>()
   // Effect triggers on every query change.
   React.useEffect(() => {
     if (initialRender.current === false) {
-      initialRender.current = true;
-      return;
+      initialRender.current = true
+      return
     }
 
     // Cancel previous debounced call.
-    if (debouncedFn.current) debouncedFn.current.clear();
+    if (debouncedFn.current) debouncedFn.current.clear()
 
     // If search length is 0, skip sending an API call.
     if (query.length === 0) {
       dispatch({
         type: 'INVALID_REQUEST',
-      });
-      return;
+      })
+      return
     }
 
     if (!state.isLoading && !abortController.current.signal.aborted) {
       dispatch({
         type: 'LOADING',
-      });
+      })
     }
 
     debouncedFn.current = debounce(() => {
       const types =
-        options.types && type === 'places' ? `&types=${options.types}` : '';
+        options.types && type === 'places' ? `&types=${options.types}` : ''
       const strictbounds =
-        options.strictbounds && types === 'places' ? `&strictbounds` : '';
+        options.strictbounds && types === 'places' ? `&strictbounds` : ''
       const offset =
-        options.offset && type === 'query' ? `&offset=${options.offset}` : '';
-      const language = options.language ? `&language=${options.language}` : '';
-      const location = options.location ? `&location=${options.location}` : '';
-      const radius = options.radius ? `&radius=${options.radius}` : '';
+        options.offset && type === 'query' ? `&offset=${options.offset}` : ''
+      const language = options.language ? `&language=${options.language}` : ''
+      const location = options.location ? `&location=${options.location}` : ''
+      const radius = options.radius ? `&radius=${options.radius}` : ''
       const components = options.components
         ? `&components=${options.components}`
         : '';
 
-      const url = `${cors}https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${query}${types}${language}${location}${radius}${strictbounds}${offset}${components}&key=${apiKey}&sessiontoken=${sessionToken.current}`;
+      const url = `${cors}https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${query}${types}${language}${location}${radius}${strictbounds}${offset}${components}&key=${apiKey}&sessiontoken=${
+        sessionToken.current
+      }`
 
       fetch(url, { signal: abortSignal.current })
         .then(data => data.json())
@@ -134,19 +112,19 @@ export default function useGoogleAutocomplete({
             payload: {
               data,
             },
-          });
+          })
         })
         .catch(() => {
           // Component unmounted and API call cancelled.
           // Reset AbortController.
           if (abortController.current.signal.aborted) {
-            abortController.current = new AbortController();
-            abortSignal.current = abortController.current.signal;
+            abortController.current = new AbortController()
+            abortSignal.current = abortController.current.signal
           }
-        });
-    }, debounceMs);
+        })
+    }, debounceMs)
 
-    debouncedFn.current();
+    debouncedFn.current()
   }, [
     query,
     debounceMs,
@@ -158,48 +136,50 @@ export default function useGoogleAutocomplete({
     options.strictbounds,
     options.offset,
     type,
-  ]);
+  ])
 
   const getPlaceDetails = (
     placeId: string,
     placeDetailOptions: {
-      fields?: string[];
-      region?: string;
-      language?: string;
-    } = {},
+      fields?: string[]
+      region?: string
+      language?: string
+    } = {}
   ) => {
     return new Promise(resolve => {
       const fields = placeDetailOptions.fields
         ? `&fields=${placeDetailOptions.fields.join(',')}`
-        : '';
+        : ''
       const region = placeDetailOptions.region
         ? `&region=${placeDetailOptions.region}`
-        : '';
+        : ''
       // If no options are passed, we'll default to closured language option.
       const language = placeDetailOptions.language
         ? `&language=${placeDetailOptions.language}`
         : options.language
-          ? `&language=${options.language}}`
-          : '';
+        ? `&language=${options.language}}`
+        : ''
 
-      const url = `${cors}https://maps.googleapis.com/maps/api/place/details/json?placeid=${placeId}${fields}${region}${language}&key=${apiKey}&sessiontoken=${sessionToken.current}`;
+      const url = `${cors}https://maps.googleapis.com/maps/api/place/details/json?placeid=${placeId}${fields}${region}${language}&key=${apiKey}&sessiontoken=${
+        sessionToken.current
+      }`
 
       fetch(url, { signal: placesAbortSignal.current })
         .then(data => data.json())
         .then(data => {
           // Reset session token after we make a Place Details query.
-          resetSessionToken();
-          resolve(data);
+          resetSessionToken()
+          resolve(data)
         })
         .catch(() => {
           // Component unmounted and API call cancelled.
-        });
-    });
-  };
+        })
+    })
+  }
 
   const resetSessionToken = () => {
-    sessionToken.current = uuid4();
-  };
+    sessionToken.current = uuid4()
+  }
 
   // Exposes an additional method to cancel a query. Usage example would be
   // when a user selects an option and you update the input field to reflect
@@ -208,7 +188,7 @@ export default function useGoogleAutocomplete({
   //
   // We can pass an addition predictions to just show the item we just selected.
   const cancelQuery = (prediction: any) => {
-    if (abortController.current) abortController.current.abort();
+    if (abortController.current) abortController.current.abort()
 
     dispatch({
       type: 'OK',
@@ -217,8 +197,8 @@ export default function useGoogleAutocomplete({
           predictions: [prediction],
         },
       },
-    });
-  };
+    })
+  }
 
   return {
     results: state.results,
@@ -226,15 +206,15 @@ export default function useGoogleAutocomplete({
     error: state.error,
     getPlaceDetails,
     cancelQuery,
-  };
+  }
 }
 
 const reducer = (
   state: any,
   action: {
-    type: string;
-    payload?: any;
-  },
+    type: string
+    payload?: any
+  }
 ) => {
   // All cases, beside 'LOADING', are status codes provided from Google Autocomplete API's response.
   switch (action.type) {
@@ -242,14 +222,14 @@ const reducer = (
       return {
         ...state,
         isLoading: true,
-      };
+      }
     case 'OK':
       return {
         ...state,
         results: action.payload.data,
         isLoading: false,
         error: null,
-      };
+      }
     case 'ZERO_RESULTS':
       return {
         ...state,
@@ -258,29 +238,29 @@ const reducer = (
         },
         isLoading: false,
         error: `No results — try another input.`,
-      };
+      }
     case 'INVALID_REQUEST':
       return {
         ...state,
         isLoading: false,
         error: null,
-      };
+      }
     case 'REQUEST_DENIED':
       return {
         ...state,
         isLoading: false,
         error: `Invalid 'key' parameter.`,
-      };
+      }
     case 'UNKNOWN_ERROR':
       return {
         ...state,
         isLoading: false,
         error: `Unknown error, refresh and try again.`,
-      };
+      }
     default:
-      return state;
+      return state
   }
-};
+}
 
 // Credit David Walsh (https://davidwalsh.name/javascript-debounce-function)
 
@@ -289,30 +269,30 @@ const reducer = (
 // N milliseconds. If `immediate` is passed, trigger the function on the
 // leading edge, instead of the trailing.
 function debounce(func: () => any, wait: number, immediate?: boolean) {
-  let timeout: any;
+  let timeout: any
 
-  const executedFunction = function (this: any) {
-    let context = this;
-    let args: any = arguments;
+  const executedFunction = function(this: any) {
+    let context = this
+    let args: any = arguments
 
-    let later = function () {
-      timeout = null;
-      if (!immediate) func.apply(context, args);
-    };
+    let later = function() {
+      timeout = null
+      if (!immediate) func.apply(context, args)
+    }
 
-    let callNow = immediate && !timeout;
+    let callNow = immediate && !timeout
 
-    clearTimeout(timeout);
+    clearTimeout(timeout)
 
-    timeout = setTimeout(later, wait);
+    timeout = setTimeout(later, wait)
 
-    if (callNow) func.apply(context, args);
-  };
+    if (callNow) func.apply(context, args)
+  }
 
-  executedFunction.clear = function () {
-    clearTimeout(timeout);
-    timeout = null;
-  };
+  executedFunction.clear = function() {
+    clearTimeout(timeout)
+    timeout = null
+  }
 
-  return executedFunction;
+  return executedFunction
 }

@@ -5,6 +5,7 @@ interface GoogleProps {
   radius?: number
   strictbounds?: boolean
   offset?: number
+  components?: string;
 }
 
 export interface AutocompleteProps {
