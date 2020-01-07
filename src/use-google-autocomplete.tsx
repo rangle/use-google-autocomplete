@@ -90,7 +90,7 @@ export default function useGoogleAutocomplete({
       const types =
         options.types && type === 'places' ? `&types=${options.types}` : ''
       const strictbounds =
-        options.strictbounds && types === 'places' ? `&strictbounds` : ''
+        options.strictbounds ? `&strictbounds` : ''
       const offset =
         options.offset && type === 'query' ? `&offset=${options.offset}` : ''
       const language = options.language ? `&language=${options.language}` : ''
