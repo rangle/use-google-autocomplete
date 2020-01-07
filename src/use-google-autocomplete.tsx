@@ -90,7 +90,7 @@ export default function useGoogleAutocomplete({
       const types =
         options.types && type === 'places' ? `&types=${options.types}` : ''
       const strictbounds =
-        options.strictbounds ? `&strictbounds` : ''
+        options.strictbounds && types === 'places' ? `&strictbounds` : ''
       const offset =
         options.offset && type === 'query' ? `&offset=${options.offset}` : ''
       const language = options.language ? `&language=${options.language}` : ''
@@ -100,7 +100,7 @@ export default function useGoogleAutocomplete({
         ? `&components=${options.components}`
         : '';
 
-      const url = `TEST${cors}https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${query}${types}${language}${location}${radius}${strictbounds}${offset}${components}&key=${apiKey}&sessiontoken=${
+      const url = `${cors}https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${query}${types}${language}${location}${radius}${strictbounds}${offset}${components}&key=${apiKey}&sessiontoken=${
         sessionToken.current
       }`
 
