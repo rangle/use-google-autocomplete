@@ -100,7 +100,7 @@ export default function useGoogleAutocomplete({
         ? `&components=${options.components}`
         : '';
 
-      const url = `${cors}https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${query}${types}${language}${location}${radius}${strictbounds}${offset}${components}&key=${apiKey}&sessiontoken=${
+      const url = `TEST${cors}https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${query}${types}${language}${location}${radius}${strictbounds}${offset}${components}&key=${apiKey}&sessiontoken=${
         sessionToken.current
       }`
 
